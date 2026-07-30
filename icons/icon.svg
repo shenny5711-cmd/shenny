@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#2b2438"/>
+  <circle cx="256" cy="256" r="160" fill="#8b5a2b"/>
+  <circle cx="256" cy="256" r="120" fill="#c99a4a"/>
+  <text x="256" y="292" font-size="140" text-anchor="middle" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" fill="#1c1826">佛</text>
+</svg>
