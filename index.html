@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon.svg">
-<link rel="stylesheet" href="css/style.css?v=11">
+<link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
 
@@ -49,6 +49,7 @@
   <section id="tab-stats" class="tab-panel">
     <div class="mantra-select-row" id="statsMantraChips"></div>
     <div class="stats-summary" id="statsSummary"></div>
+    <button class="btn btn-secondary" id="btnExportPdf">匯出累積總數 PDF</button>
     <div class="stats-groups">
       <div class="stats-group">
         <h3>每日</h3>
@@ -162,13 +163,16 @@
   </div>
 </div>
 
-<script src="js/db.js?v=11"></script>
-<script src="js/text-library.js?v=11"></script>
+<!-- 匯出 PDF 用的報表內容，平常隱藏，只有列印時（window.print）才顯示 -->
+<div id="printReport" class="print-report"></div>
+
+<script src="js/db.js?v=12"></script>
+<script src="js/text-library.js?v=12"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=11"></script>
-<script src="js/sync.js?v=11"></script>
-<script src="js/app.js?v=11"></script>
+<script src="js/firebase-config.js?v=12"></script>
+<script src="js/sync.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
 </body>
 </html>

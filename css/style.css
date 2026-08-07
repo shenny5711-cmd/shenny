@@ -279,3 +279,21 @@ main { flex: 1; padding: 16px; max-width: 720px; margin: 0 auto; width: 100%; }
   border-radius: 999px;
   font-size: 0.8rem;
 }
+
+/* 匯出 PDF：平常隱藏，列印時才顯示，其餘畫面全部隱藏 */
+.print-report { display: none; }
+.print-report h1 { font-size: 1.4rem; margin: 0 0 4px; }
+.print-report .print-meta { color: #555; font-size: 0.85rem; margin: 0 0 16px; }
+.print-report table { width: 100%; border-collapse: collapse; }
+.print-report th, .print-report td { border: 1px solid #999; padding: 8px 10px; text-align: left; font-size: 0.95rem; }
+.print-report tfoot td { font-weight: 700; }
+
+@media print {
+  body > *:not(#printReport) { display: none !important; }
+  #printReport {
+    display: block !important;
+    background: #fff;
+    color: #111;
+    padding: 0;
+  }
+}

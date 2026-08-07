@@ -27,6 +27,7 @@ async function init() {
   bindManualModal();
   bindMantraModal();
   bindTexts();
+  bindExportPdf();
   renderStats();
   renderTextList();
 
@@ -348,6 +349,41 @@ async function renderStats() {
 
 function emptyRow() {
   return `<div class="stats-row" style="color:var(--text-dim)"><span>尚無紀錄</span></div>`;
+}
+
+// ---------- 匯出累積總數 PDF（用瀏覽器內建列印，選「另存為 PDF」）----------
+function bindExportPdf() {
+  $('#btnExportPdf').addEventListener('click', exportStatsPdf);
+}
+
+async function exportStatsPdf() {
+  const summaries = await DB.getAll('dailySummaries');
+  const rows = mantras.map((m) => {
+    const total = summaries.filter(s => s.mantraId === m.id).reduce((sum, s) => sum + s.totalCount, 0);
+    return { name: m.name, total, target: m.target };
+  });
+  const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const rowsHtml = rows.map(r => `
+    <tr>
+      <td>${r.name}</td>
+      <td style="text-align:right">${r.total.toLocaleString()}</td>
+      <td>${r.target > 0 ? `發願 ${r.target.toLocaleString()} 遍，已完成 ${Math.min(100, r.total / r.target * 100).toFixed(1)}%` : ''}</td>
+    </tr>
+  `).join('');
+
+  $('#printReport').innerHTML = `
+    <h1>念佛計數 累積總數報表</h1>
+    <p class="print-meta">匯出時間：${dateStr}</p>
+    <table>
+      <thead><tr><th>佛號 / 咒語</th><th>累積次數</th><th>發願進度</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr><td>總計</td><td style="text-align:right">${grandTotal.toLocaleString()}</td><td></td></tr></tfoot>
+    </table>
+  `;
+  window.print();
 }
 
 // ---------- 法本 (PDF，靜態庫，見 js/text-library.js) ----------
