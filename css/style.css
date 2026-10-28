@@ -1,4 +1,4 @@
-/* 配色：白天「宣紙米白＋檀木棕＋金」，手機切到深色模式時自動換成夜間配色 */
+/* 配色：宣紙米白＋檀木棕＋金；不論手機是不是深色模式都固定用這組淺色 */
 :root {
   --bg: #f5efe4;
   --surface: #fffcf6;
@@ -24,31 +24,7 @@
   --gutter: max(16px, calc((100% - var(--content)) / 2));
   --serif: "Noto Serif TC", "Songti TC", "Source Han Serif TC", serif;
   --sans: -apple-system, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #15110d;
-    --surface: #211b15;
-    --surface-2: #2c241c;
-    --border: #3a3027;
-    --text: #f2e8d8;
-    --text-dim: #b5a58e;
-    --text-faint: #7f715f;
-    --accent: #e3a957;
-    --on-accent: #22170b;
-    --gold: #d9a24f;
-    --danger: #e0716b;
-    --ok: #7cc28a;
-    --track: #32281e;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
-    --orb-1: #f1d08c;
-    --orb-2: #d29a45;
-    --orb-3: #8f5a22;
-    --orb-text: #2a1806;
-    color-scheme: dark;
-  }
+  color-scheme: only light;
 }
 
 * { box-sizing: border-box; }

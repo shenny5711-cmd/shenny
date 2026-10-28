@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chant-keeper-v14';
+const CACHE_NAME = 'chant-keeper-v15';
 const ASSETS = [
   './',
   './index.html',
