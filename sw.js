@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chant-keeper-v13';
+const CACHE_NAME = 'chant-keeper-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -33,7 +33,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith('http')) return; // chrome-extension:// 等非 http(s) 請求不歸這裡管，Cache API 也不支援
   event.respondWith(
-    fetch(event.request).then(res => {
+    fetch(freshRequest(event.request)).then(res => {
       if (res.ok) {
         const clone = res.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
@@ -42,3 +42,10 @@ self.addEventListener('fetch', (event) => {
     }).catch(() => caches.match(event.request))
   );
 });
+
+// 自己網站的檔案每次都跟伺服器確認一次（沒變就只回「沒變」，很省流量），
+// 避免手機瀏覽器拿自己暫存的舊檔；外部的 Firebase、字型照舊用暫存
+function freshRequest(req) {
+  if (new URL(req.url).origin !== self.location.origin) return req;
+  try { return new Request(req, { cache: 'no-cache' }); } catch (e) { return req; }
+}

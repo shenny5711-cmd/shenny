@@ -4,6 +4,12 @@ let session = null; // { startTime, count }
 let lockSession = null; // 鎖定模式底下的獨立累加，離開鎖定時併入同一個 session
 let currentTapCircleUrl = null; // 目前套用在大圓上的法照 object URL
 let currentPreviewUrl = null; // 佛號設定 modal 內預覽圖的 object URL
+let reloadWhenIdle = false; // 新版已就緒但正在念，等按「結束本次」後再換
+
+// 版本號直接讀 index.html 裡 app.js?v=N 的 N，改版時不用多改一個地方
+const APP_VERSION = (() => {
+  try { return new URL(document.currentScript.src).searchParams.get('v') || ''; } catch (e) { return ''; }
+})();
 
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -34,9 +40,26 @@ async function init() {
   renderStats();
   renderTextList();
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  }
+  $('#appVersion').textContent = APP_VERSION ? `目前版本：${APP_VERSION}` : '';
+  registerServiceWorker();
+}
+
+// ---------- 自動更新 ----------
+// 每次打開或切回 App 都檢查有沒有新版；新版裝好就自動重新載入，
+// 正在念的話等按「結束本次」再換，不會打斷計數
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  const hadController = !!navigator.serviceWorker.controller; // 第一次安裝不算更新，不用重新載入
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+    });
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return;
+    if (session) reloadWhenIdle = true;
+    else location.reload();
+  });
 }
 
 // ---------- Tabs ----------
@@ -156,6 +179,7 @@ async function endSession() {
   $('#btnEndSession').disabled = true;
   await saveSessionProgress(s);
   renderStats();
+  if (reloadWhenIdle) location.reload();
 }
 
 // ---------- 鎖定模式（防誤觸）----------

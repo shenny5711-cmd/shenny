@@ -468,6 +468,7 @@ main {
 .account-info { flex: 1; min-width: 0; }
 .account-label { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-desc { margin: 4px 0 0; font-size: 0.85rem; color: var(--text-dim); }
+.app-version { margin: 24px 0 4px; text-align: center; font-size: 0.8rem; color: var(--text-faint); }
 
 /* ---------- 法本 PDF 檢視器 ---------- */
 .pdf-viewer {
