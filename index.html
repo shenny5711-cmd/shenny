@@ -3,27 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#2b2438">
+<meta name="theme-color" content="#f5efe4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15110d" media="(prefers-color-scheme: dark)">
 <title>念佛計數器</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon.svg">
-<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&display=swap">
+<link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand">念佛計數器</div>
-  <nav class="tabs">
-    <button class="tab-btn active" data-tab="counter">計數</button>
-    <button class="tab-btn" data-tab="stats">統計</button>
-    <button class="tab-btn" data-tab="mantras">佛號設定</button>
-    <button class="tab-btn" data-tab="texts">法本</button>
-  </nav>
-  <div class="auth-status">
-    <span id="authLabel">未登入</span>
-    <button class="btn btn-secondary" id="btnAuthOpen">登入</button>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5c-1.9 2.3-2.6 5.3-.9 8.9h1.8c1.7-3.6 1-6.6-.9-8.9zM4.2 8.6c-.2 3.6 1.8 5.9 6.3 6.6-.8-3.3-3-5.6-6.3-6.6zm15.6 0c-3.3 1-5.5 3.3-6.3 6.6 4.5-.7 6.5-3 6.3-6.6zM3 17.2c2.6-1.3 5.6-1.2 9 .3 3.4-1.5 6.4-1.6 9-.3v1.6c-2.6-1.1-5.6-.9-9 .6-3.4-1.5-6.4-1.7-9-.6z"/></svg>
+    念佛計數器
   </div>
+  <button class="sync-badge" id="syncBadge" type="button">
+    <span class="dot"></span><span class="when-in">已登入</span><span class="when-out">未登入</span>
+  </button>
 </header>
 
 <main>
@@ -32,52 +32,113 @@
   <section id="tab-counter" class="tab-panel active">
     <div class="mantra-select-row" id="mantraChips"></div>
 
+    <div class="counter-meta">
+      <div class="meta-item"><span class="meta-label">今日</span><span class="meta-value" id="metaToday">0</span></div>
+      <div class="meta-item"><span class="meta-label">累積</span><span class="meta-value" id="metaTotal">0</span></div>
+      <div class="meta-item"><span class="meta-label">發願進度</span><span class="meta-value" id="metaTarget">未設定</span></div>
+    </div>
+
     <div class="counter-stage" id="counterStage">
-      <div class="count-display" id="countDisplay">0</div>
-      <div class="session-hint" id="sessionHint">點擊圓形按鈕開始計數</div>
-      <button class="tap-circle" id="tapCircle" aria-label="計數">敲</button>
+      <div class="tap-wrap no-target" id="tapWrap">
+        <button class="tap-circle" id="tapCircle" aria-label="計數">
+          <span class="tap-label">本次</span>
+          <span class="count-display" id="countDisplay">0</span>
+          <span class="session-hint" id="sessionHint">輕觸開始</span>
+        </button>
+      </div>
     </div>
 
     <div class="counter-actions">
-      <button class="btn btn-secondary" id="btnManual">手動輸入</button>
-      <button class="btn btn-secondary" id="btnLock">鎖定模式</button>
-      <button class="btn btn-primary" id="btnEndSession" disabled>結束本次</button>
+      <button class="btn btn-secondary tool-btn" id="btnManual">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
+        手動輸入
+      </button>
+      <button class="btn btn-secondary tool-btn" id="btnLock">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        鎖定模式
+      </button>
+      <button class="btn btn-primary end-btn" id="btnEndSession" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        結束本次
+      </button>
     </div>
   </section>
 
   <!-- 統計頁 -->
   <section id="tab-stats" class="tab-panel">
     <div class="mantra-select-row" id="statsMantraChips"></div>
-    <div class="stats-summary" id="statsSummary"></div>
-    <button class="btn btn-secondary" id="btnExportPdf">匯出累積總數 PDF</button>
+    <div class="stats-summary card" id="statsSummary"></div>
+
+    <div class="segmented">
+      <button class="seg-btn active" data-range="daily">每日</button>
+      <button class="seg-btn" data-range="weekly">每週</button>
+      <button class="seg-btn" data-range="monthly">每月</button>
+    </div>
     <div class="stats-groups">
-      <div class="stats-group">
-        <h3>每日</h3>
+      <div class="stats-group active" data-range="daily">
         <div id="dailyList" class="stats-list"></div>
       </div>
-      <div class="stats-group">
-        <h3>每週</h3>
+      <div class="stats-group" data-range="weekly">
         <div id="weeklyList" class="stats-list"></div>
       </div>
-      <div class="stats-group">
-        <h3>每月</h3>
+      <div class="stats-group" data-range="monthly">
         <div id="monthlyList" class="stats-list"></div>
       </div>
     </div>
-  </section>
 
-  <!-- 佛號設定頁 -->
-  <section id="tab-mantras" class="tab-panel">
-    <div id="mantraList" class="mantra-list"></div>
-    <button class="btn btn-primary" id="btnAddMantra">+ 新增佛號 / 咒語</button>
+    <button class="btn btn-secondary btn-block" id="btnExportPdf">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+      匯出累積總數 PDF
+    </button>
   </section>
 
   <!-- 法本頁 -->
   <section id="tab-texts" class="tab-panel">
+    <h2 class="section-title">法本</h2>
+    <p class="section-desc">點一下就能全螢幕閱讀</p>
     <div id="textList" class="mantra-list"></div>
   </section>
 
+  <!-- 設定頁（佛號設定＋帳號同步）-->
+  <section id="tab-mantras" class="tab-panel">
+    <h2 class="section-title">佛號 / 咒語</h2>
+    <p class="section-desc">點一下可以修改名稱、發願數、顏色和法照</p>
+    <div id="mantraList" class="mantra-list"></div>
+    <button class="btn btn-add btn-block" id="btnAddMantra">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      新增佛號 / 咒語
+    </button>
+
+    <h2 class="section-title section-gap">帳號同步</h2>
+    <div class="card account-card">
+      <div class="account-info">
+        <div class="account-label" id="authLabel">未登入</div>
+        <p class="account-desc">用同一組帳號在手機、平板、電腦登入，念佛紀錄就會自動同步。</p>
+      </div>
+      <button class="btn btn-secondary" id="btnAuthOpen">登入</button>
+    </div>
+  </section>
+
 </main>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="counter">
+    <span class="tab-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/></svg></span>
+    計數
+  </button>
+  <button class="tab-btn" data-tab="stats">
+    <span class="tab-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-8M12 20V5M19 20v-12"/></svg></span>
+    統計
+  </button>
+  <button class="tab-btn" data-tab="texts">
+    <span class="tab-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 3.5 5v13.5c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5V20"/></svg></span>
+    法本
+  </button>
+  <button class="tab-btn" data-tab="mantras">
+    <span class="tab-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/></svg></span>
+    設定
+  </button>
+</nav>
 
 <!-- 法本 PDF 檢視器 -->
 <div id="pdfViewer" class="pdf-viewer hidden">
@@ -90,9 +151,10 @@
 
 <!-- 鎖定模式全螢幕遮罩 -->
 <div id="lockOverlay" class="lock-overlay hidden">
+  <div class="lock-mantra" id="lockMantra"></div>
   <div class="lock-count" id="lockCount">0</div>
-  <div class="lock-hint">輕觸畫面計數</div>
-  <button class="lock-exit" id="lockExit">長按 2 秒解除鎖定</button>
+  <div class="lock-hint">輕觸畫面任何地方計數</div>
+  <button class="lock-exit" id="lockExit">按住 2 秒解除鎖定</button>
 </div>
 
 <!-- 手動輸入 modal -->
@@ -103,7 +165,7 @@
       <select id="manualMantra"></select>
     </label>
     <label>次數
-      <input type="number" id="manualCount" min="1" value="1">
+      <input type="number" id="manualCount" min="1" value="1" inputmode="numeric">
     </label>
     <label>日期
       <input type="date" id="manualDate">
@@ -119,14 +181,14 @@
 <div id="authModal" class="modal hidden">
   <div class="modal-card">
     <h3>登入同步</h3>
-    <p style="color:var(--text-dim); font-size:0.85rem; margin:0;">在所有裝置用同一組帳號密碼登入，念佛紀錄就會自動同步。不用是真的信箱，自己記得住就好。</p>
+    <p class="modal-desc">在所有裝置用同一組帳號密碼登入，念佛紀錄就會自動同步。不用是真的信箱，自己記得住就好。</p>
     <label>Email
       <input type="email" id="authEmail" autocomplete="username">
     </label>
     <label>密碼
       <input type="password" id="authPassword" autocomplete="current-password" placeholder="至少 6 碼">
     </label>
-    <div id="authError" style="color:var(--danger); font-size:0.85rem; min-height:1.2em;"></div>
+    <div id="authError" class="form-error"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" id="authCancel">取消</button>
       <button class="btn btn-secondary" id="authSignUp">註冊新帳號</button>
@@ -143,9 +205,9 @@
       <input type="text" id="mantraName" placeholder="例如：南無阿彌陀佛">
     </label>
     <label>發願總數（選填，0 表示不設定）
-      <input type="number" id="mantraTarget" min="0" value="0">
+      <input type="number" id="mantraTarget" min="0" value="0" inputmode="numeric">
     </label>
-    <label>顏色
+    <label>顏色（佛號標籤和大圓外圈會用這個顏色）
       <input type="color" id="mantraColor" value="#8b5a2b">
     </label>
     <label>法照（選填，會顯示在計數大圓上）
@@ -166,13 +228,13 @@
 <!-- 匯出 PDF 用的報表內容，平常隱藏，只有列印時（window.print）才顯示 -->
 <div id="printReport" class="print-report"></div>
 
-<script src="js/db.js?v=12"></script>
-<script src="js/text-library.js?v=12"></script>
+<script src="js/db.js?v=13"></script>
+<script src="js/text-library.js?v=13"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=12"></script>
-<script src="js/sync.js?v=12"></script>
-<script src="js/app.js?v=12"></script>
+<script src="js/firebase-config.js?v=13"></script>
+<script src="js/sync.js?v=13"></script>
+<script src="js/app.js?v=13"></script>
 </body>
 </html>

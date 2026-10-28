@@ -1,6 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#2b2438"/>
-  <circle cx="256" cy="256" r="160" fill="#8b5a2b"/>
-  <circle cx="256" cy="256" r="120" fill="#c99a4a"/>
-  <text x="256" y="292" font-size="140" text-anchor="middle" font-family="'Noto Sans TC','Microsoft JhengHei',sans-serif" fill="#1c1826">佛</text>
+  <defs>
+    <radialGradient id="orb" cx="38%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#f8e2ad"/>
+      <stop offset="0.55" stop-color="#e2b25d"/>
+      <stop offset="1" stop-color="#b67a30"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#f5efe4"/>
+  <circle cx="256" cy="256" r="176" fill="#9a5b22" opacity="0.35"/>
+  <circle cx="256" cy="256" r="150" fill="url(#orb)"/>
+  <text x="256" y="304" font-size="140" text-anchor="middle" font-family="'Noto Serif TC','Songti TC','PMingLiU',serif" font-weight="700" fill="#3b2410">佛</text>
 </svg>

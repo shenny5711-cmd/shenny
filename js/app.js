@@ -8,6 +8,8 @@ let currentPreviewUrl = null; // 佛號設定 modal 內預覽圖的 object URL
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 
+const ICON_CHEVRON = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+
 // ---------- 初始化 ----------
 async function init() {
   mantras = await DB.getAll('mantras');
@@ -22,6 +24,7 @@ async function init() {
   renderMantraList();
   applyTapCircleBackground();
   bindTabs();
+  bindStatsRange();
   bindCounter();
   bindLockMode();
   bindManualModal();
@@ -39,14 +42,17 @@ async function init() {
 // ---------- Tabs ----------
 function bindTabs() {
   $$('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $$('.tab-btn').forEach(b => b.classList.remove('active'));
-      $$('.tab-panel').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      $(`#tab-${btn.dataset.tab}`).classList.add('active');
-      if (btn.dataset.tab === 'stats') renderStats();
-    });
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
+  // 右上角的登入狀態：點了直接到「設定」頁看帳號
+  $('#syncBadge').addEventListener('click', () => switchTab('mantras'));
+}
+
+function switchTab(tab) {
+  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `tab-${tab}`));
+  window.scrollTo(0, 0);
+  if (tab === 'stats') renderStats();
 }
 
 // ---------- 佛號選擇 chips ----------
@@ -57,8 +63,7 @@ function renderMantraChips() {
       const chip = document.createElement('button');
       chip.className = 'mantra-chip' + (m.id === activeMantraId ? ' active' : '');
       chip.textContent = m.name;
-      chip.style.borderColor = m.color;
-      if (m.id === activeMantraId) chip.style.background = m.color;
+      chip.style.setProperty('--chip', m.color);
       chip.addEventListener('click', () => {
         if (session) { alert('請先結束目前的計數再切換佛號'); return; }
         activeMantraId = m.id;
@@ -76,6 +81,7 @@ function applyTapCircleBackground() {
   const circle = $('#tapCircle');
   if (currentTapCircleUrl) { URL.revokeObjectURL(currentTapCircleUrl); currentTapCircleUrl = null; }
   const mantra = mantras.find(m => m.id === activeMantraId);
+  if (mantra) $('#tapWrap').style.setProperty('--ring', mantra.color); // 大圓外圈用佛號顏色
   if (mantra && mantra.image) {
     currentTapCircleUrl = URL.createObjectURL(mantra.image);
     circle.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url("${currentTapCircleUrl}")`;
@@ -113,17 +119,32 @@ function bindCounter() {
     if (!session) {
       session = { startTime: Date.now(), count: 0 };
       $('#btnEndSession').disabled = false;
+      $('#sessionHint').textContent = '持誦中…';
     }
+    const mantra = mantras.find(m => m.id === activeMantraId);
+    $('#lockMantra').textContent = mantra ? mantra.name : '';
     $('#lockOverlay').classList.remove('hidden');
     $('#lockCount').textContent = session.count;
   });
 
-  // 離開頁面前若有未結束的 session，先保存，避免資料遺失
+  // 離開頁面前（關螢幕、切到別的 App）若有未結束的 session，先保存，避免資料遺失
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && session && session.count > 0) {
-      commitSession(activeMantraId, session.count, session.startTime, Date.now(), 'auto');
+    if (document.visibilityState === 'hidden' && session) {
+      saveSessionProgress(session).then(renderStats);
     }
   });
+}
+
+// 只存「上次存檔之後」新念的部分：離開畫面時先存一次，
+// 回來繼續念、按結束時只補存剩下的，同一段就不會被算兩次
+function saveSessionProgress(s) {
+  const unsaved = s.count - (s.savedCount || 0);
+  if (unsaved <= 0) return Promise.resolve();
+  const from = s.savedAt || s.startTime;
+  const now = Date.now();
+  s.savedCount = s.count;
+  s.savedAt = now;
+  return commitSession(activeMantraId, unsaved, from, now, 'auto');
 }
 
 async function endSession() {
@@ -131,12 +152,10 @@ async function endSession() {
   const s = session;
   session = null;
   $('#countDisplay').textContent = '0';
-  $('#sessionHint').textContent = '點擊圓形按鈕開始計數';
+  $('#sessionHint').textContent = '輕觸開始';
   $('#btnEndSession').disabled = true;
-  if (s.count > 0) {
-    await commitSession(activeMantraId, s.count, s.startTime, Date.now(), 'auto');
-    renderStats();
-  }
+  await saveSessionProgress(s);
+  renderStats();
 }
 
 // ---------- 鎖定模式（防誤觸）----------
@@ -155,17 +174,21 @@ function bindLockMode() {
   const exitBtn = $('#lockExit');
   const startPress = (e) => {
     e.stopPropagation();
+    exitBtn.classList.add('pressing'); // 按鈕慢慢填滿，讓人知道要繼續按住
     pressTimer = setTimeout(() => {
+      exitBtn.classList.remove('pressing');
       overlay.classList.add('hidden');
     }, 2000);
   };
   const cancelPress = (e) => {
     e.stopPropagation();
+    exitBtn.classList.remove('pressing');
     clearTimeout(pressTimer);
   };
   exitBtn.addEventListener('touchstart', startPress);
   exitBtn.addEventListener('mousedown', startPress);
   exitBtn.addEventListener('touchend', cancelPress);
+  exitBtn.addEventListener('touchcancel', cancelPress);
   exitBtn.addEventListener('mouseup', cancelPress);
   exitBtn.addEventListener('mouseleave', cancelPress);
 }
@@ -202,10 +225,11 @@ function renderMantraList() {
     item.className = 'mantra-item';
     item.innerHTML = `
       <div class="mantra-swatch" style="background:${m.color}"></div>
-      <div>
+      <div class="mantra-item-info">
         <div class="mantra-item-name">${m.name}</div>
-        <div class="mantra-item-target">${m.target > 0 ? '發願 ' + m.target + ' 遍' : '未設定發願數'}</div>
+        <div class="mantra-item-target">${m.target > 0 ? '發願 ' + m.target.toLocaleString() + ' 遍' : '未設定發願數'}</div>
       </div>
+      ${ICON_CHEVRON}
     `;
     item.addEventListener('click', () => openMantraModal(m));
     list.appendChild(item);
@@ -320,35 +344,66 @@ async function renderStats() {
   const total = mine.reduce((sum, s) => sum + s.totalCount, 0);
   const mantra = mantras.find(m => m.id === activeMantraId);
   const target = mantra ? mantra.target : 0;
-
-  const summaryEl = $('#statsSummary');
-  summaryEl.innerHTML = `
-    <div class="big-total">${total.toLocaleString()} 遍</div>
-    ${target > 0 ? `
-      <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100, total / target * 100)}%"></div></div>
-      <div style="color:var(--text-dim); font-size:0.85rem; margin-top:4px;">發願 ${target.toLocaleString()} 遍，已完成 ${Math.min(100, (total / target * 100)).toFixed(1)}%</div>
-    ` : ''}
-  `;
-
-  $('#dailyList').innerHTML = mine.slice(0, 14).map(s =>
-    `<div class="stats-row"><span>${s.date}</span><span class="count">${s.totalCount}</span></div>`
-  ).join('') || emptyRow();
+  const pct = target > 0 ? Math.min(100, total / target * 100) : 0;
 
   const weekly = {};
   mine.forEach(s => { weekly[weekKey(s.date)] = (weekly[weekKey(s.date)] || 0) + s.totalCount; });
-  $('#weeklyList').innerHTML = Object.entries(weekly).slice(0, 12).map(([k, v]) =>
-    `<div class="stats-row"><span>${k}</span><span class="count">${v}</span></div>`
-  ).join('') || emptyRow();
-
   const monthly = {};
   mine.forEach(s => { monthly[monthKey(s.date)] = (monthly[monthKey(s.date)] || 0) + s.totalCount; });
-  $('#monthlyList').innerHTML = Object.entries(monthly).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 12).map(([k, v]) =>
-    `<div class="stats-row"><span>${k}</span><span class="count">${v}</span></div>`
-  ).join('') || emptyRow();
+
+  const today = todayStr();
+  const todayCount = (mine.find(s => s.date === today) || { totalCount: 0 }).totalCount;
+  const weekCount = weekly[weekKey(today)] || 0;
+  const monthCount = monthly[monthKey(today)] || 0;
+
+  $('#statsSummary').innerHTML = `
+    <div class="summary-name">${mantra ? mantra.name : ''}</div>
+    <div class="summary-label">累積總數</div>
+    <div class="big-total">${total.toLocaleString()}<small>遍</small></div>
+    ${target > 0 ? `
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="progress-text">發願 ${target.toLocaleString()} 遍，已完成 ${pct.toFixed(1)}%</div>
+    ` : `<div class="progress-text">還沒設定發願數，可以到「設定」頁加上</div>`}
+    <div class="stat-tiles">
+      <div class="stat-tile"><b>${todayCount.toLocaleString()}</b><span>今日</span></div>
+      <div class="stat-tile"><b>${weekCount.toLocaleString()}</b><span>本週</span></div>
+      <div class="stat-tile"><b>${monthCount.toLocaleString()}</b><span>本月</span></div>
+    </div>
+  `;
+
+  $('#dailyList').innerHTML = statsRows(mine.slice(0, 14).map(s => [s.date, s.totalCount]));
+  $('#weeklyList').innerHTML = statsRows(Object.entries(weekly).slice(0, 12));
+  $('#monthlyList').innerHTML = statsRows(Object.entries(monthly).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 12));
+
+  // 計數頁上方的小統計，和大圓外圈的發願進度
+  $('#metaToday').textContent = todayCount.toLocaleString();
+  $('#metaTotal').textContent = total.toLocaleString();
+  $('#metaTarget').textContent = target > 0 ? pct.toFixed(1) + '%' : '未設定';
+  $('#tapWrap').style.setProperty('--p', pct);
+  $('#tapWrap').classList.toggle('no-target', target === 0);
+}
+
+// 每一列後面墊一條淺色長條，一眼看出哪天念得多
+function statsRows(entries) {
+  if (entries.length === 0) return emptyRow();
+  const max = Math.max(...entries.map(([, v]) => v));
+  return entries.map(([k, v]) =>
+    `<div class="stats-row"><i class="bar" style="width:${max > 0 ? v / max * 100 : 0}%"></i><span>${k}</span><span class="count">${v.toLocaleString()}</span></div>`
+  ).join('');
 }
 
 function emptyRow() {
-  return `<div class="stats-row" style="color:var(--text-dim)"><span>尚無紀錄</span></div>`;
+  return `<div class="stats-row empty"><span>尚無紀錄</span></div>`;
+}
+
+// 統計頁「每日／每週／每月」切換
+function bindStatsRange() {
+  $$('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      $$('.stats-group').forEach(g => g.classList.toggle('active', g.dataset.range === btn.dataset.range));
+    });
+  });
 }
 
 // ---------- 匯出累積總數 PDF（用瀏覽器內建列印，選「另存為 PDF」）----------
@@ -394,9 +449,11 @@ function renderTextList() {
       <div class="text-item-icon">PDF</div>
       <div class="text-item-info">
         <div class="text-item-name">${t.name}</div>
+        <div class="text-item-sub">點開閱讀</div>
       </div>
+      ${ICON_CHEVRON}
     </div>
-  `).join('') || `<div style="color:var(--text-dim); padding:12px;">尚無法本</div>`;
+  `).join('') || `<div class="list-empty">尚無法本</div>`;
 }
 
 function bindTexts() {

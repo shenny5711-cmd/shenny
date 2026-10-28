@@ -67,6 +67,7 @@ function describeAuthError(e) {
 }
 
 fbAuth.onAuthStateChanged(async (user) => {
+  document.body.classList.toggle('signed-in', !!user); // 右上角登入狀態的小圓點靠這個 class 變色
   if (user) {
     currentUid = user.uid;
     $sync('#authLabel').textContent = '已登入：' + user.email;
